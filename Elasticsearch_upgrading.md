@@ -1,5 +1,11 @@
 ## Full cluster restart upgrades
 
+### Checking list before upgrading
+
+- Kibana saved objects checking
+
+- Check all data sources have been shutdown before upgrading to new version
+
 1. Disable shard allocation
 
 ```sh
