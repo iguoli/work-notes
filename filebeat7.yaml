@@ -19,7 +19,7 @@ filebeat.inputs:
         equals:
           kubernetes.container.name: filebeat
   type: docker
-- containers.ids:
+- containers.ids
   - '*'
   json.ignore_decoding_error: true
   json.keys_under_root: true

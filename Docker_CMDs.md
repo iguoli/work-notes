@@ -1,7 +1,7 @@
 Run a filebeat container and connect to a specified elasticsearch service
 
 ```sh
-docker run -d \
+docker run --rm -d \
   --name=filebeat \
   --user=root \
   --volume="$(pwd)/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro" \
