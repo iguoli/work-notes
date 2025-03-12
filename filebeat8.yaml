@@ -7,105 +7,105 @@ filebeat.inputs:
 - type: filestream
   enabled: true
   paths:
-    - /var/log/pods/*.log
+  - /var/log/pods/*.log
 
 - type: container
   enabled: true
   paths:
-    - /var/log/containers/*.log
+  - /var/log/containers/*.log
   exclude_lines:
-    - '"index_type__":'
+  - '"index_type__":'
   processors:
-    - add_kubernetes_metadata:
-        in_cluster: true
-    - drop_event:
-        when:
-          equals:
-            kubernetes.container.name: filebeat
+  - add_kubernetes_metadata:
+      in_cluster: true
+  - drop_event:
+      when:
+        equals:
+          kubernetes.container.name: filebeat
 
 - type: container
   enabled: true
   paths:
-    - /var/log/containers/*.log
+  - /var/log/containers/*.log
   json.ignore_decoding_error: true
   json.keys_under_root: true
   json.overwrite_keys: true
   processors:
-    - include_fields:
-        fields:
-          - index_type__
-          - name
-          - value
-          - tags
+  - include_fields:
+      fields:
+      - index_type__
+      - name
+      - value
+      - tags
 
 - type: filestream
   enabled: true
   paths:
-    - /var/log/pods/*/*/*.log
+  - /var/log/pods/*/*/*.log
   parsers:
-    - ndjson:
-        overwrite_keys: true
+  - ndjson:
+      overwrite_keys: true
   processors:
-    - script:
-        lang: javascript
-        source: |
-          function process(event){
-              var path = event.Get('log.file.path');
-              path = path.split('/');
-              var compath = path[4];
-              compath = compath.split('_')
-              event.Put('kubernetes.namespace', compath[0]);
-              event.Put('kubernetes.pod.name', compath[1]);
-              event.Put('kubernetes.container.name', path[5]);
-              var message = event.Get('message');
-              var parts = message.split(' ');
-              if (parts.length > 1 && (parts[1] == 'stdout' || parts[1] == 'stderr')) {
-                event.Put('stream', parts[1])
-              }
-          }
+  - script:
+      lang: javascript
+      source: |
+        function process(event){
+            var path = event.Get('log.file.path');
+            path = path.split('/');
+            var compath = path[4];
+            compath = compath.split('_')
+            event.Put('kubernetes.namespace', compath[0]);
+            event.Put('kubernetes.pod.name', compath[1]);
+            event.Put('kubernetes.container.name', path[5]);
+            var message = event.Get('message');
+            var parts = message.split(' ');
+            if (parts.length > 1 && (parts[1] == 'stdout' || parts[1] == 'stderr')) {
+              event.Put('stream', parts[1])
+            }
+        }
 
 http.enabled: true
 http.port: 5066
 
 output.elasticsearch:
   hosts:
-    - http://elasticsearch.elk.svc.cluster.local:9200
+  - http://elasticsearch.elk.svc.cluster.local:9200
   indices:
-    - index: data_join
-      when.equals:
-        index_type__: data_join
-    - index: raw_data
-      when.equals:
-        index_type__: raw_data
-    - index: metrics_v2
-      when.equals:
-        index_type__: metrics
-    - index: "filebeat_fedlearner_nonprod-%{+yyyy.MM.dd}"
+  - index: data_join
+    when.equals:
+      index_type__: data_join
+  - index: raw_data
+    when.equals:
+      index_type__: raw_data
+  - index: metrics_v2
+    when.equals:
+      index_type__: metrics
+  - index: "filebeat_fedlearner_nonprod-%{+yyyy.MM.dd}"
 
 processors:
-  - drop_fields:
-      fields:
-        - agent.ephemeral_id
-        - agent.hostname
-        - agent.id
-        - agent.type
-        - agent.version
-        - ecs.version
-        - agent
-        - ecs
-  - include_fields:
-      fields:
-        - host.name
-        - input.type
-        - kubernetes.container.name
-        - kubernetes.namespace
-        - kubernetes.node.name
-        - kubernetes.pod.name
-        - kubernetes.pod.uid
-        - log.file.path
-        - log.offset
-        - message
-        - stream
-      when.not:
-        has_fields:
-          - index_type__
+- drop_fields:
+    fields:
+    - agent.ephemeral_id
+    - agent.hostname
+    - agent.id
+    - agent.type
+    - agent.version
+    - ecs.version
+    - agent
+    - ecs
+- include_fields:
+    fields:
+    - host.name
+    - input.type
+    - kubernetes.container.name
+    - kubernetes.namespace
+    - kubernetes.node.name
+    - kubernetes.pod.name
+    - kubernetes.pod.uid
+    - log.file.path
+    - log.offset
+    - message
+    - stream
+    when.not:
+      has_fields:
+      - index_type__
