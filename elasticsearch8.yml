@@ -31,11 +31,15 @@ node.roles: ["data", "master", "ingest"]
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-path.data: /data/elasticsearch/data
+# path.data: /data/elasticsearch/data
+path.data: /data/elasticsearch-7.17.17/data
 #
 # Path to log files:
 #
 path.logs: /data/elasticsearch/logs
+#
+# Path to snapshot repositories
+path.repo: ["/data/es_nfs_backup"]
 #
 # ----------------------------------- Memory -----------------------------------
 #
@@ -87,5 +91,3 @@ xpack.security.http.ssl:
 xpack.security.transport.ssl:
   enabled: false
 xpack.security.enabled: false
-
-path.repo: ["/data/es_nfs_backup"]

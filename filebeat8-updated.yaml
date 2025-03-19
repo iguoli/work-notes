@@ -4,7 +4,7 @@ filebeat.config:
     reload.enabled: false
 
 filebeat.inputs:
-- type: log
+- type: filestream
   enabled: true
   paths:
   - /var/log/pods/*.log
@@ -33,7 +33,7 @@ filebeat.inputs:
       - value
       - tags
 
-- type: log
+- type: filestream
   enabled: true
   paths:
   - /var/log/pods/*/*/*.log
