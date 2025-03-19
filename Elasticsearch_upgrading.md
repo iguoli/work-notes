@@ -1,9 +1,5 @@
 ## Full cluster restart upgrades
 
-## Create snapshots
-
-[Restore a snapshot](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshots-restore-snapshot.html)
-
 ## Create symlinks
 
 ```sh
@@ -18,6 +14,13 @@ sudo -u elasticsearch ln -s /data/elasticsearch-7.9.1 /data/elasticsearch
 sudo cat /data/elasticsearch/config/elasticsearch.yml
 ```
 
+change heap size in jvm.options 
+
+```options
+-Xms32g
+-Xmx32g
+```
+
 ## Check and revise systemd service file
 
 ```sh
@@ -30,11 +33,15 @@ sudo systemctl restart elasticsearch
 sudo systemctl status elasticsearch
 ```
 
+## Create snapshots
+
+[Restore a snapshot](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshots-restore-snapshot.html)
+
 ### Checking list before upgrading
 
-- Kibana saved objects checking
+- Shutdown logstash, beats and APM services
 
-- Check all data sources have been shutdown before upgrading to new version
+- Export Kibana saved objects
 
 1. Disable shard allocation
 2. Stop all Elasticsearch nodes and upgrade them
