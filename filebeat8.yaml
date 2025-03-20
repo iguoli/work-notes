@@ -22,16 +22,6 @@ filebeat.inputs:
       when:
         equals:
           kubernetes.container.name: fedlearner-filebeat
-
-- type: container
-  enabled: true
-  paths:
-  - /var/log/containers/*.log
-  json.ignore_decoding_error: true
-  json.keys_under_root: true
-  json.overwrite_keys: true
-  json.add_error_key: true
-  processors:
   - include_fields:
       fields:
       - index_type__
@@ -43,9 +33,6 @@ filebeat.inputs:
   enabled: true
   paths:
   - /var/log/pods/*/*/*.log
-  parsers:
-  - ndjson:
-      overwrite_keys: true
   processors:
   - script:
       lang: javascript
