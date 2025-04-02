@@ -5,6 +5,8 @@ helm upgrade --install emqx-operator emqx/emqx-operator \
   --set "image.tag=2.2.28" \
   --set "imagePullSecrets[0].name=emqx-registry"
 
+helm upgrade --install abacus-emqx --namespace emqx --create-namespace .
+
 kubectl create secret docker-registry emqx-registry \
   --docker-server=<registry> \
   --docker-username=<username> \
