@@ -1,0 +1,29 @@
+$ k auth can-i get pods --as=system:serviceaccout:my-uat:my-filebeat-uat
+no
+$ kubectl auth can-i --list --as=system:serviceaccount:my-uat:my-filebeat-uat
+Resources                                       Non-Resource URLs                      Resource Names   Verbs
+selfsubjectreviews.authentication.k8s.io        []                                     []               [create]
+selfsubjectaccessreviews.authorization.k8s.io   []                                     []               [create]
+selfsubjectrulesreviews.authorization.k8s.io    []                                     []               [create]
+namespaces                                      []                                     []               [get list watch]
+nodes                                           []                                     []               [get list watch]
+pods                                            []                                     []               [get list watch]
+daemonsets.apps                                 []                                     []               [get list watch]
+deployments.apps                                []                                     []               [get list watch]
+replicasets.apps                                []                                     []               [get list watch]
+statefulsets.apps                               []                                     []               [get list watch]
+daemonsets.extensions                           []                                     []               [get list watch]
+deployments.extensions                          []                                     []               [get list watch]
+replicasets.extensions                          []                                     []               [get list watch]
+statefulsets.extensions                         []                                     []               [get list watch]
+                                                [/.well-known/openid-configuration/]   []               [get]
+                                                [/.well-known/openid-configuration]    []               [get]
+                                                [/api/*]                               []               [get]
+                                                [/api]                                 []               [get]
+                                                [/apis/*]                              []               [get]
+                                                [/apis]                                []               [get]
+
+
+kubectl auth can-i get pods --namespace=fedlearner-uat --as=system:serviceaccount:fedlearner-uat:my-filebeat-uat
+
+kubectl get rolebinding,clusterrolebinding --all-namespaces -o yaml | grep -A10 'fedlearner-filebeat-uat'

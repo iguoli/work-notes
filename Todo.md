@@ -8,3 +8,5 @@ Azure
 - Key Valut
 - 存储账户
 - MySQL / PostgreSQL / Redis
+
+## Azure cloud
