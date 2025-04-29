@@ -5,7 +5,7 @@ filebeat.inputs:
   paths:
   - /var/log/containers/*.log
   parsers.container.stream: all
-  prospectors.scanner.symlinks: true
+  prospector.scanner.symlinks: true
   processors:
   - add_kubernetes_metadata:
       in_cluster: true
@@ -16,7 +16,6 @@ filebeat.inputs:
   - include_fields:
       fields:
       - host.name
-      - input.type
       - kubernetes.container.name
       - kubernetes.namespace
       - kubernetes.node.name
@@ -27,6 +26,20 @@ filebeat.inputs:
       - message
       - stream
 
+processors:
+- drop_fields:
+    fields:
+    - agent.ephemeral_id
+    - agent.hostname
+    - agent.id
+    - agent.type
+    - agent.version
+    - ecs.version
+    - agent
+    - ecs
+    ignore_missing: true
+
+logging.level: info
 http.enabled: true
 http.port: 5066
 
@@ -39,4 +52,4 @@ output.elasticsearch:
     - equals.kubernetes.container.name: "fedlearner-gateway"
     - equals.kubernetes.container.name: "fedlearner-apm-server"
     - equals.kubernetes.container.name: "fedlearner-web-console-v2"
-  - index: "filebeat_nonbiz_nonprod" 
+  - index: "filebeat_nonbiz_nonprod"

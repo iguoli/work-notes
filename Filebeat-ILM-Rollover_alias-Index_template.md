@@ -2,7 +2,7 @@
 
 ## 1. Background
 
-The pods' logs on AKS are collected by filebeat which is deployed as a daemonset on each node. The logs will be classified into different indices (business and non-business) based on the container name, and then rolled over to a new index when the index size exceeds 5GB or 1 day. The business logs are stored in Elasticsearch for 30 days, while the non-business logs are stored for 7 days.
+The pods' logs on AKS are collected by filebeat which is deployed as a DaemonSet on each node. The logs will be classified into different indices (business and non-business) based on the container name, and then rolled over to a new index when the index size exceeds 5GB or 1 day. The business logs are stored in Elasticsearch for 30 days, while the non-business logs are stored for 7 days.
 
 ## 2. Implementation
 
@@ -13,37 +13,59 @@ filebeat-config.yaml
 ```yaml
 filebeat.inputs:
 - type: filestream
-  id: containers-filestream
+  id: aks-container-logs
   enabled: true
   paths:
-    - /var/log/containers/*.log
-  parsers:
-    - container:
-        stream: all
-
-processors:
-  - add_cloud_metadata: {}
-  - add_host_metadata: {}
+  - /var/log/containers/*.log
+  parsers.container.stream: all
+  prospector.scanner.symlinks: true
+  processors:
   - add_kubernetes_metadata:
       in_cluster: true
+      host: ${NODE_NAME}
       matchers:
-        - logs_path:
-            logs_path: "/var/log/containers/"
+      - logs_path:
+          logs_path: "/var/log/containers/"
+  - include_fields:
+      fields:
+      - host.name
+      - kubernetes.container.name
+      - kubernetes.namespace
+      - kubernetes.node.name
+      - kubernetes.pod.name
+      - kubernetes.pod.uid
+      - log.file.path
+      - log.offset
+      - message
+      - stream
 
-http:
-  enabled: true
-  port: 5066
+processors:
+- drop_fields:
+    fields:
+    - agent.ephemeral_id
+    - agent.hostname
+    - agent.id
+    - agent.type
+    - agent.version
+    - ecs.version
+    - agent
+    - ecs
+    ignore_missing: true
+
+logging.level: info
+http.enabled: true
+http.port: 5066
 
 output.elasticsearch:
   hosts: ["http://elasticsearch.elk.svc.cluster.local:9200"]
 
   indices:
-    - index: "filebeat_biz_nonprod"
-      when.or:
-        - equals.kubernetes.container.name: "fedlearner-gateway"
-        - equals.kubernetes.container.name: "fedlearner-apm-server"
-        - equals.kubernetes.container.name: "fedlearner-web-console-v2"
-    - index: "filebeat_nonbiz_nonprod" 
+  - index: "filebeat_biz_nonprod"
+    when.or:
+    - equals.kubernetes.container.name: "fedlearner-gateway"
+    - equals.kubernetes.container.name: "fedlearner-apm-server"
+    - equals.kubernetes.container.name: "fedlearner-web-console-v2"
+  - index: "filebeat_nonbiz_nonprod"
 ```
 
 ### 2.2. ILM Policy
@@ -59,7 +81,7 @@ output.elasticsearch:
       "hot": {
         "actions": {
           "rollover": {
-            "max_primary_shard_size": "50gb",
+            "max_primary_shard_size": "10gb",
             "max_age": "1d"
           }
         }
@@ -86,7 +108,7 @@ output.elasticsearch:
       "hot": {
         "actions": {
           "rollover": {
-            "max_primary_shard_size": "50gb",
+            "max_primary_shard_size": "10gb",
             "max_age": "1d"
           }
         }
@@ -102,7 +124,7 @@ output.elasticsearch:
 }
 ```
 
-### 2.3. Create index template
+### 2.3. Index template
 
 #### 2.3.1. Create business index template
 
@@ -116,11 +138,7 @@ output.elasticsearch:
       "index.lifecycle.name": "filebeat-biz-30d-ilm-policy",
       "index.lifecycle.rollover_alias": "filebeat_biz_nonprod"
     },
-    "aliases": {
-      "filebeat_biz_nonprod": {
-        "is_write_index": true
-      }
-    }
+    "aliases": {}
   },
   "priority": 500
 }
@@ -138,23 +156,19 @@ output.elasticsearch:
       "index.lifecycle.name": "filebeat-nonbiz-7d-ilm-policy",
       "index.lifecycle.rollover_alias": "filebeat_nonbiz_nonprod"
     },
-    "aliases": {
-      "filebeat_nonbiz_nonprod": {
-        "is_write_index": true
-      }
-    }
+    "aliases": {}
   },
   "priority": 500
 }
 ```
 
-### 2.4. Create initial index
+### 2.4. Rollover alias and initial index
 
-#### 2.4.1. Create business initial index with dynamic date along with the index name
+#### 2.4.1. Create business initial index and rollover alias
 
-`PUT <filebeat_biz_nonprod-{now/d{yyyy.MM.dd|+08:00}}-000001>`，该命令无法直接执行，需要进行 URLEncode 处理，处理后如下：
+- `PUT <filebeat_biz_nonprod-{now/d{yyyy.MM.dd|+08:00}}-000001>`
 
-`PUT %3Cfilebeat_biz_nonprod-%7Bnow%2Fd%7Byyyy.MM.dd%7C%2B08%3A00%7D%7D-000001%3E`
+- URL Encoded: `PUT %3Cfilebeat_biz_nonprod-%7Bnow%2Fd%7Byyyy.MM.dd%7C%2B08%3A00%7D%7D-000001%3E`
 
 ```json
 {
@@ -176,11 +190,11 @@ output.elasticsearch:
 
    并且加了："is_write_index": true，表示这个索引是 alias 的当前写入索引。
 
-#### 2.4.2. Create non-business initial index with dynamic date along with the index name
+#### 2.4.2. Create non-business initial index and rollover alias
 
-`PUT <filebeat_nonbiz_nonprod-{now/d{yyyy.MM.dd|+08:00}}-000001>`，该命令无法直接执行，需要进行 URLEncode 处理，处理后如下：
+- `PUT <filebeat_nonbiz_nonprod-{now/d{yyyy.MM.dd|+08:00}}-000001>`
 
-`PUT %3Cfilebeat_nonbiz_nonprod-%7Bnow%2Fd%7Byyyy.MM.dd%7C%2B08%3A00%7D%7D-000001%3E`
+- URL Encoded: `PUT %3Cfilebeat_nonbiz_nonprod-%7Bnow%2Fd%7Byyyy.MM.dd%7C%2B08%3A00%7D%7D-000001%3E`
 
 ```json
 {
@@ -199,16 +213,3 @@ output.elasticsearch:
 - PUT `<dynamic-index-name>`：用 Elasticsearch 动态表达式 `<...>` 生成带日期的索引名，PUT 时要包含尖括号 `<...>`，这是动态索引的语法。
 
 - `"is_write_index": true`：告诉 alias，当前索引是写入的地方。
-
-- 时间格式 `{yyyy.MM.dd|+08:00}`：表示北京时间，保证 rollover 的时候按中国时间滚动。
-
-## 3. Diagram
-
-```text
-Filebeat → 写入 alias filebeat_nonbiz_nonprod → 实际是 filebeat_nonbiz_nonprod-2025.04.28-000001
-        ↳ ILM 策略监控
-            ↳ 超过5GB或1天 rollover
-                ↳ 创建 filebeat_nonbiz_nonprod-2025.04.29-000002
-                ↳ alias 自动切换指向新的写索引
-                ↳ 7天后自动删除旧索引
-```
