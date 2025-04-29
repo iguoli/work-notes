@@ -47,9 +47,9 @@ output.elasticsearch:
   hosts: ["http://elasticsearch.elk.svc.cluster.local:9200"]
 
   indices:
-  - index: "filebeat_biz_nonprod"
+  - index: "filebeat_biz"
     when.or:
     - equals.kubernetes.container.name: "fedlearner-gateway"
     - equals.kubernetes.container.name: "fedlearner-apm-server"
     - equals.kubernetes.container.name: "fedlearner-web-console-v2"
-  - index: "filebeat_nonbiz_nonprod"
+  - index: "filebeat_nonbiz"

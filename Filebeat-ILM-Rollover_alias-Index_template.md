@@ -1,4 +1,4 @@
-# Filebeat ILM Rollover alias Index_template
+# Filebeat, ILM, Rollover alias and Index template
 
 ## 1. Background
 
@@ -60,12 +60,12 @@ output.elasticsearch:
   hosts: ["http://elasticsearch.elk.svc.cluster.local:9200"]
 
   indices:
-  - index: "filebeat_biz_nonprod"
+  - index: "filebeat_biz"
     when.or:
     - equals.kubernetes.container.name: "fedlearner-gateway"
     - equals.kubernetes.container.name: "fedlearner-apm-server"
     - equals.kubernetes.container.name: "fedlearner-web-console-v2"
-  - index: "filebeat_nonbiz_nonprod"
+  - index: "filebeat_nonbiz"
 ```
 
 ### 2.2. ILM Policy
@@ -132,11 +132,11 @@ output.elasticsearch:
 
 ```json
 {
-  "index_patterns": ["filebeat_biz_nonprod-*"],
+  "index_patterns": ["filebeat_biz-*"],
   "template": {
     "settings": {
       "index.lifecycle.name": "filebeat-biz-30d-ilm-policy",
-      "index.lifecycle.rollover_alias": "filebeat_biz_nonprod"
+      "index.lifecycle.rollover_alias": "filebeat_biz"
     },
     "aliases": {}
   },
@@ -150,11 +150,11 @@ output.elasticsearch:
 
 ```json
 {
-  "index_patterns": ["filebeat_nonbiz_nonprod-*"],
+  "index_patterns": ["filebeat_nonbiz-*"],
   "template": {
     "settings": {
       "index.lifecycle.name": "filebeat-nonbiz-7d-ilm-policy",
-      "index.lifecycle.rollover_alias": "filebeat_nonbiz_nonprod"
+      "index.lifecycle.rollover_alias": "filebeat_nonbiz"
     },
     "aliases": {}
   },
@@ -166,14 +166,14 @@ output.elasticsearch:
 
 #### 2.4.1. Create business initial index and rollover alias
 
-- `PUT <filebeat_biz_nonprod-{now/d{yyyy.MM.dd|+08:00}}-000001>`
+- `PUT <filebeat_biz-{now/d{yyyy.MM.dd|+08:00}}-000001>`
 
-- URL Encoded: `PUT %3Cfilebeat_biz_nonprod-%7Bnow%2Fd%7Byyyy.MM.dd%7C%2B08%3A00%7D%7D-000001%3E`
+- URL Encoded: `PUT %3Cfilebeat_biz-%7Bnow%2Fd%7Byyyy.MM.dd%7C%2B08%3A00%7D%7D-000001%3E`
 
 ```json
 {
   "aliases": {
-    "filebeat_biz_nonprod": {
+    "filebeat_biz": {
       "is_write_index": true
     }
   }
@@ -192,14 +192,14 @@ output.elasticsearch:
 
 #### 2.4.2. Create non-business initial index and rollover alias
 
-- `PUT <filebeat_nonbiz_nonprod-{now/d{yyyy.MM.dd|+08:00}}-000001>`
+- `PUT <filebeat_nonbiz-{now/d{yyyy.MM.dd|+08:00}}-000001>`
 
-- URL Encoded: `PUT %3Cfilebeat_nonbiz_nonprod-%7Bnow%2Fd%7Byyyy.MM.dd%7C%2B08%3A00%7D%7D-000001%3E`
+- URL Encoded: `PUT %3Cfilebeat_nonbiz-%7Bnow%2Fd%7Byyyy.MM.dd%7C%2B08%3A00%7D%7D-000001%3E`
 
 ```json
 {
   "aliases": {
-    "filebeat_nonbiz_nonprod": {
+    "filebeat_nonbiz": {
       "is_write_index": true
     }
   }
